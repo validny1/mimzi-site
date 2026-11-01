@@ -63,6 +63,16 @@ h1 { font-size: clamp(64px, 14vw, 136px); line-height: 0.92; letter-spacing: -0.
 .released { margin-top: 36px; display: none; }
 .btn { display: inline-flex; align-items: center; gap: 10px; background: var(--text); color: var(--bg); text-decoration: none; font-weight: 700; padding: 14px 22px; border-radius: 12px; }
 .note { color: var(--faint); font-size: 13px; margin: 14px 0 0; }
+.wait { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 18px; margin-top: 28px; }
+.wait[hidden] { display: none; }
+.waitBtn { font: inherit; font-weight: 700; font-size: 15px; color: var(--bg); background: var(--text); border: 1px solid var(--text); border-radius: 12px; padding: 13px 22px; cursor: pointer; transition: transform 0.15s, background 0.2s, color 0.2s; }
+.waitBtn:hover { transform: translateY(-1px); }
+.waitBtn:active { transform: scale(0.97); }
+.waitBtn.done { background: transparent; color: var(--text); border-color: var(--line); cursor: default; transform: none; }
+.waitCount { margin: 0; color: var(--muted); font-size: 15px; }
+.waitCount b { color: var(--text); font-variant-numeric: tabular-nums; font-size: 18px; }
+.bump { animation: bump 0.45s cubic-bezier(0.2, 0.8, 0.2, 1); display: inline-block; }
+@keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.35); color: var(--accent); } 100% { transform: scale(1); } }
 
 .fan { position: relative; height: 380px; max-width: 460px; width: 100%; margin: 0 auto; }
 @media (min-width: 920px) { .fan { height: 460px; } }
@@ -170,6 +180,11 @@ footer { padding: 48px 0 56px; color: var(--muted); font-size: 14px; }
         <p class="note" id="soon">Ссылка на скачивание появится здесь совсем скоро.</p>
       </div>
       <p class="note" id="countNote">Ссылка на скачивание появится на этой странице в день выхода.</p>
+
+      <div class="wait" id="wait" hidden>
+        <button type="button" class="waitBtn" id="waitBtn">Я жду MIMZI</button>
+        <p class="waitCount"><b id="waitNum">0</b> <span id="waitWord">человек ждут</span></p>
+      </div>
     </div>
     <div class="fan" aria-hidden="true">
       <img src="img/card-frost.webp" alt="">
@@ -301,6 +316,64 @@ footer { padding: 48px 0 56px; color: var(--muted); font-size: 14px; }
     })
     // Without an answer the number stays a dash: never a made-up count.
     .catch(() => {});
+
+  // "I'm waiting" button: every browser counts once (a random token kept in its own storage).
+  const api = (fn, body) =>
+    fetch('https://yesjtzqraaugngfugcpj.supabase.co/rest/v1/rpc/' + fn, {
+      method: 'POST',
+      headers: { apikey: 'sb_publishable_veWrH6tVugFBzvehB6wJxw_Wfa9_XjY', 'Content-Type': 'application/json' },
+      body: JSON.stringify(body || {}),
+    }).then((r) => (r.ok ? r.json() : Promise.reject()));
+  const store = {
+    get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} },
+  };
+  const word = (n) => {
+    const a = n % 10, b = n % 100;
+    if (a === 1 && b !== 11) return 'человек ждёт';
+    return 'человек ждут';
+  };
+  function showWaiters(n, bump) {
+    $('waitNum').textContent = n;
+    $('waitWord').textContent = word(n);
+    if (bump) {
+      $('waitNum').classList.remove('bump');
+      void $('waitNum').offsetWidth;
+      $('waitNum').classList.add('bump');
+    }
+  }
+  function markDone() {
+    $('waitBtn').textContent = '✓ Ты в списке ждущих';
+    $('waitBtn').classList.add('done');
+    $('waitBtn').disabled = true;
+  }
+  if (RELEASE_AT > Date.now()) {
+    api('site_wait_count')
+      .then((n) => {
+        $('wait').hidden = false;
+        showWaiters(n, false);
+        if (store.get('mimzi-waiting')) markDone();
+      })
+      .catch(() => {});
+    $('waitBtn').addEventListener('click', () => {
+      let token = store.get('mimzi-wait-token');
+      if (!token) {
+        token = crypto.randomUUID ? crypto.randomUUID() : '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, (c) => (c ^ (Math.random() * 16) >> (c / 4)).toString(16));
+        store.set('mimzi-wait-token', token);
+      }
+      markDone();
+      api('site_wait', { p_token: token })
+        .then((n) => {
+          store.set('mimzi-waiting', '1');
+          showWaiters(n, true);
+        })
+        .catch(() => {
+          $('waitBtn').textContent = 'Я жду MIMZI';
+          $('waitBtn').classList.remove('done');
+          $('waitBtn').disabled = false;
+        });
+    });
+  }
 
   // Sections fade in as they scroll into view.
   const io = 'IntersectionObserver' in window
