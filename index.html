@@ -111,13 +111,16 @@ h2 { font-size: clamp(30px, 4.6vw, 48px); line-height: 1.05; letter-spacing: -0.
 .cell p { color: var(--muted); margin: 0; font-size: 15px; }
 
 /* Cards */
-.cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-@media (min-width: 820px) { .cards { grid-template-columns: repeat(4, 1fr); gap: 20px; } }
-.cards figure { margin: 0; }
-.cards img { width: 100%; display: block; border-radius: 7%; transition: transform 0.35s; }
-.cards figure:hover img { transform: translateY(-6px); }
-.cards figcaption { margin-top: 12px; font-size: 13px; color: var(--muted); }
-.cards figcaption b { display: block; color: var(--text); font-size: 15px; font-weight: 600; }
+.cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+@media (min-width: 820px) { .cards { grid-template-columns: repeat(4, 1fr); gap: 16px; } }
+/* Each card sits in an equal tile, keeping its own 5:7 shape. */
+.cards figure { margin: 0; display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 14px; transition: border-color 0.25s; }
+.cards figure:hover { border-color: #3A3A44; }
+.cards img { display: block; width: 82%; height: auto; aspect-ratio: 520 / 728; object-fit: contain; margin: 4px auto 0; border-radius: 7%; transition: transform 0.35s; }
+.cards figure:hover img { transform: translateY(-4px); }
+.cards figcaption { margin-top: 14px; font-size: 12px; line-height: 1.4; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; }
+.cards figcaption b { display: block; color: var(--text); font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+@media (min-width: 820px) { .cards figure { padding: 18px; } .cards figcaption { font-size: 13px; } .cards figcaption b { font-size: 15px; } }
 
 .split { display: grid; gap: 16px; margin-top: 16px; }
 @media (min-width: 820px) { .split { grid-template-columns: 1fr 1fr; gap: 20px; } }
